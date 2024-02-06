@@ -6,6 +6,7 @@ import {BrowserRouter} from "react-router-dom";
 import {Provider} from "react-redux";
 import store from "./store/store";
 import {createRoot} from "react-dom/client";
+import EventsProvider from "./providers/EventsProvider";
 
 const root = createRoot(document.getElementById('root')!);
 root.render(
@@ -14,10 +15,11 @@ root.render(
             <GlobalStyle/>
             <Provider store={store}>
                 <UserProvider>
+                    <EventsProvider>
                     <BrowserRouter>
                         <App/>
-
                     </BrowserRouter>
+                    </EventsProvider>
                 </UserProvider>
             </Provider>
         </ThemeProvider>

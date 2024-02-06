@@ -76,7 +76,8 @@ const UserProvider = ({children}: { children: any }) => {
                     const keys = Keys.fromMnemonic(mnemonic)
                     await connect(keys)
                     setKeys(keys)
-                    return {result: true}
+                    console.log('pubkey', keys.publicKey.toHex())
+                    return {result: true, mnemonic}
                 } catch (e: any) {
                     console.log(e)
                     setError(e.message + (e.message.includes('Decryption failed.') ? ' Try with a different password.' : ''))

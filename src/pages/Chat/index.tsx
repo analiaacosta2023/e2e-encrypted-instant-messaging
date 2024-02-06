@@ -34,9 +34,10 @@ import EmojiPicker, {
 import ModalSendFile from "../../components/ModalSendFile";
 import ModalSendMedia from "../../components/ModalSendMedia";
 import AudioRecorder from "../../components/AudioRecorder";
-import {Filter, PublicKey, Timestamp, nip04_decrypt, nip04_encrypt, Tag, EventBuilder} from "@rust-nostr/nostr-sdk";
+import { PublicKey} from "@rust-nostr/nostr-sdk";
 
 import {useParams} from 'react-router-dom'
+import {ECHO_PREFIX, eventsProviderContext} from "../../providers/EventsProvider";
 
 const mockGroup = {
     isGroup: true,
@@ -91,6 +92,7 @@ const mockGroup = {
 // ]
 const Chat = () => {
     const {client, keys} = useContext(userProviderContext)
+    const {getNotes, getPrivateMessages} = useContext(eventsProviderContext)
     const [messageHistory, setMessageHistory] = useState<MessageType[]>([])
     const [expandChat, setExpandChat] = useState<boolean>(false)
     const [expandGroup, setExpandGroup] = useState<boolean>(false)
@@ -112,7 +114,7 @@ const Chat = () => {
     const attachmentNode = useRef()
     useOnClickOutside(attachmentNode, () => setMenuAttachment(false))
 
-    const {alias} = useParams()
+    const {pubkey} = useParams()
 
     const styles = useSpring({
         config: config.stiff,
@@ -218,71 +220,71 @@ const Chat = () => {
         if (!client || !keys) return
         let events;
 
-        if (alias) {
-            const aliasPublicKey = PublicKey.fromHex(alias)
-            const filter = new Filter().author(aliasPublicKey).kind(4).until(Timestamp.now()).limit(10);
-            console.log('filter', filter.asJson());
+        if (pubkey) {
 
-            events = await client.getEventsOf([filter], 10);
+            const {result, privateMessages } = await getPrivateMessages(pubkey)
+
+            if(result && privateMessages) {
+                events = privateMessages
+            }
+
         } else {
-            const filter = new Filter().author(keys.publicKey).until(Timestamp.now()).limit(10);
 
-            console.log('filter', filter.asJson());
+            const {result, notes} = await getNotes()
 
-            events = await client.getEventsOf([filter], 10);
+            if(result && notes) {
+                events = notes
+            }
         }
 
+if(events) {
+    setMessageHistory(events.map((eventJson: any) => {
 
-        setMessageHistory(events.map((event) => {
 
-            const eventJson = JSON.parse(event.asJson())
-            console.log(eventJson)
+        /*if (eventJson.kind === 4) {
+            try {
+                //if(eventJson.pubkey !== keys.publicKey.toHex()){
+                eventJson.content = nip04_decrypt(keys.secretKey, PublicKey.fromHex(eventJson.pubkey), eventJson.content);
+                console.log("Message:", eventJson.content);
+                /!*                    client.sendDirectMsg(PublicKey.fromHex(eventJson.pubkey), "Echo: " + eventJson.content);
 
-            /*            if (eventJson.kind === 4) {
-
-                            eventJson.content = nip04_decrypt(keys.secretKey, PublicKey.fromHex(eventJson.pubkey), eventJson.content);
-                            console.log("Message:", eventJson.content);
-
-                        }*/
-
-            return {
-                id: eventJson.id,
-                mine: eventJson.pubkey === keys.publicKey.toHex(),
-                data: {
-                    message: eventJson.content,
-                    createdAt: eventJson.created_at
-                }
+                                    if (eventJson.content == "stop") {
+                                        return true;
+                                    }*!/
+                //}
+            } catch (error) {
+                console.log("Impossible to decrypt DM:", error);
             }
-        }).sort((a, b) => a.data.createdAt - b.data.createdAt))
+        }*/
 
+        return {
+            id: eventJson.id,
+            mine: eventJson.pubkey === keys.publicKey.toHex() || eventJson.content.startsWith(ECHO_PREFIX),
+            data: {
+                message: eventJson.content,
+                createdAt: eventJson.created_at
+            }
+        }
+    }).sort((a, b) => a.data.createdAt - b.data.createdAt))
+}
     }
 
     useEffect(() => {
+
         console.log('clients changing')
         showMessages().then(() => console.log('show messages loaded'))
-    }, [client, keys])
+    }, [client, keys, pubkey])
 
     const sendMessage = async () => {
 
         if (client && keys) {
 
-            if (alias) {
+            if (pubkey) {
 
-                const aliasPublicKey = PublicKey.fromHex(alias)
-
-/*                 let msg = nip04_encrypt(keys.secretKey, aliasPublicKey, htmlContent)
-
-                const newEvent = EventBuilder({
-                    public_key: keys.publicKey,
-                    created_at: Timestamp.now(),
-                    kind: 4,
-                    tags: [Tag.parse(['p', alias])],
-                    content: msg
-                }) */
+                const aliasPublicKey = PublicKey.fromHex(pubkey)
 
                 await client.sendDirectMsg(aliasPublicKey, htmlContent);
 
-                // await client.sendEvent(newEvent)
             } else {
                 // Esto solo devuelve un eventId
                 await client.publishTextNote(htmlContent, []);

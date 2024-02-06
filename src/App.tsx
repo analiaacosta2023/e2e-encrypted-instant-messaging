@@ -34,7 +34,7 @@ const App = () => {
                 </Route>
                 <Route element={<LayoutWithLogin/>} path={'/chat'}>
                     <Route index element={<Chat/>}/>
-                    <Route path={':alias'} element={<Chat/>}/>
+                    <Route path={':pubkey'} element={<Chat/>}/>
                 </Route>
                 <Route element={<LayoutPrimary/>} path={'*'}>
                     <Route index element={<NotFound/>}/>

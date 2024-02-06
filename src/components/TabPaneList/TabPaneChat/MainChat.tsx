@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import HeaderSection from "../../HeaderSection";
 import {ChatType, ScreenChatType} from "../../../types/chat.type";
 import IconPortal from "../../IconPortal";
@@ -9,22 +9,29 @@ import styled from "styled-components";
 import {TextLarge, TextSmall} from "../../Typhography";
 import {ScreenChatEnum} from "../../../constants/chat";
 import FormInputSearch from "../../FormInputSearch";
+import {eventsProviderContext} from "../../../providers/EventsProvider";
+import {ContactType} from "../../../entities/ContactType";
+import {ChatTypeEnum} from "../../../constants/chat";
+import {userProviderContext} from "../../../providers/UserProvider"
 
-const mockData = [
+const mockData: ContactType[] = [
     {
-        type: 'USER',
+        type: ChatTypeEnum.USER,
         data: {
             alias: 'user1',
             publicName: 'UserType 1',
+            pubkey: '21e951ac2bf9dc51afd2f74ae6330e0a47db7fa9203b108ac6bf16bc038e8des'
         },
         isMuted: true,
     },
     {
-        type: 'GROUP',
+        type: ChatTypeEnum.GROUP,
         data: {
             alias: 'group1',
             publicName: 'GROUP 1',
-        }
+            pubkey: '21e951ac2bf9dc51afd2f74ae6330e0a47db7fa9203b108ac6bf16bc038e8des'
+        },
+        isMuted: false,
     }
 ]
 
@@ -37,6 +44,39 @@ const MainChat = ({goTo}: PropsTypeMainChat) => {
     const onChange = (valueSearch: string) => {
         setTerm(valueSearch)
     }
+
+    const [chatList, setChatList] = useState<ContactType[]>()
+    const {getContacts} = useContext(eventsProviderContext)
+    const {client} = useContext(userProviderContext)
+
+    useEffect(()=>{
+        handleContacts().then(() => console.log('handleContacts loaded'))
+    }, [client])
+
+    const handleContacts = async ()=> {
+
+        const {contacts} = await getContacts()
+
+        if (contacts){
+            const ContactsListDTO: ContactType[] = contacts.map((contact)=> {
+
+            return {
+                type: ChatTypeEnum.USER,
+                data: {
+                    alias: contact.tags[3],
+                    publicName: 'Public Name or alias',
+                    pubkey: contact.pubkey
+                },
+                isMuted: false,
+            }
+            })
+
+            setChatList(ContactsListDTO)
+
+            console.log('chat list dto', chatList)
+        }
+    }
+
     return (
         <MainChatBox>
             <Header>
@@ -67,7 +107,14 @@ const MainChat = ({goTo}: PropsTypeMainChat) => {
                 {
                     mockData.map((item, index) => {
                         return <React.Fragment key={index}>
-                            <ChatItemCp type={item.type as ChatType} data={item.data} isMuted={item?.isMuted}/>
+                            <ChatItemCp type={item.type} data={item.data} isMuted={item?.isMuted}/>
+                        </React.Fragment>
+                    })
+                }
+                {chatList &&
+                    chatList.map((item, index) => {
+                        return <React.Fragment key={index}>
+                            <ChatItemCp type={item.type} data={item.data} isMuted={item?.isMuted}/>
                         </React.Fragment>
                     })
                 }

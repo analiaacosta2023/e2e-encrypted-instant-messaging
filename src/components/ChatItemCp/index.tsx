@@ -1,6 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
 import styled, {css} from "styled-components";
-import {ChatType} from "../../types/chat.type";
 import {ChatTypeEnum} from "../../constants/chat";
 import IconPortal from "../IconPortal";
 import IconUserDefault from '../../assets/icons/icon-user-default.svg'
@@ -12,12 +11,9 @@ import Menu from "./Menu";
 import {useOnClickOutside} from "../../hooks/useOnClickOutside";
 import {NavLink} from "react-router-dom";
 import ModalDeleteChat from "../ModalChat/ModalDeleteChat";
-interface ChatItemCp{
-  type : ChatType
-  data?:any;
-  isMuted?:boolean;
-}
-const ChatItemCp = ({type,data,isMuted}:ChatItemCp) => {
+import {ContactType} from "../../entities/ContactType";
+
+const ChatItemCp = ({type,data,isMuted}:ContactType) => {
   const {publicName} = data
   const [showMenu,setShowMenu] = useState<boolean>(false);
   const [visible,setVisible] = useState<boolean>(false);
@@ -41,7 +37,7 @@ const ChatItemCp = ({type,data,isMuted}:ChatItemCp) => {
   useOnClickOutside(chatItemNode, () => setShowMenu(false))
   return (
     <ChatItemCpBox ref={chatItemNode as any} onContextMenu={(event:React.MouseEvent<HTMLDivElement>) => handleClick(event)} isFocus={showMenu}>
-      <NavLink to={`/${data.alias}`} className={(navData) => navData.isActive ? 'active' : ''}>
+      <NavLink to={`./${data.pubkey}`} className={(navData) => navData.isActive ? 'active' : ''}>
         <ChatItemCpMain className={'chat-item-cp-main'}>
           <ImageBox>
             {type === ChatTypeEnum.USER && <IconPortal srcIcon={IconUserDefault} widthIcon={'56px'} heightIcon={'56px'}/>}
