@@ -128,6 +128,7 @@ const EventsProvider = ({children}: { children: any })=> {
                     const eventJson = JSON.parse(event.asJson())
                     eventJson.content = nip04_decrypt(keys.secretKey, event.author, event.content);
                     if (!eventJson.content.startsWith(ECHO_PREFIX)) {
+                        console.log('prueba')
                         console.log('no empiezo con el prefijo echo')
                         const eventRef = eventJson.tags.find((el: any) => !!el.p)
                         console.log('soy la referencia al event', eventJson.tags, eventRef)
