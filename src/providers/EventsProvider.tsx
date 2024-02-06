@@ -2,6 +2,7 @@ import {createContext, useContext, useEffect, useState} from 'react'
 import {Event, Filter, nip04_decrypt, PublicKey, Timestamp} from "@rust-nostr/nostr-sdk";
 import {userProviderContext} from './UserProvider'
 import {EventJsonType} from "../entities/EventJsonType";
+import {string} from "yup";
 
 export const ECHO_PREFIX = 'Echo,.12;:'
 
@@ -115,6 +116,8 @@ const EventsProvider = ({children}: { children: any })=> {
             const filterReceived = new Filter().pubkey(keys.publicKey).author(aliasPublicKey).kind(4).until(Timestamp.now()).limit(100);
             const filterSent = new Filter().pubkey(aliasPublicKey).author(keys.publicKey).kind(4).until(Timestamp.now()).limit(100);
 
+            const filterEcho = new Filter().pubkey(keys.publicKey).author(keys.publicKey).kind(4).until(Timestamp.now()).limit(100);
+
 
             const receivedDMs = await client.getEventsOf([filterReceived], 10);
 
@@ -122,25 +125,42 @@ const EventsProvider = ({children}: { children: any })=> {
 
             const sendDmsMap: Map<string, Event> = sendDms.reduce((previousValue: Map<string, Event>, currentValue) => previousValue.set(currentValue.id.toHex(), currentValue), new Map())
 
+            const echoDms = await client.getEventsOf([filterEcho], 10);
+
             let privateMessages: EventJsonType[] = []
+
             try {
+
+                echoDms.filter((event)=>{
+                    const eventRef = event.tags.find((el: any) => !!el.p)
+                    console.log('soy la referencia al event', event.tags, eventRef)
+                    if (eventRef && 'e' in eventRef && (typeof eventRef.e === 'string' && sendDmsMap.get(eventRef.e))) return event;
+                })
+
                 privateMessages = receivedDMs.map((event) => {
                     const eventJson = JSON.parse(event.asJson())
                     eventJson.content = nip04_decrypt(keys.secretKey, event.author, event.content);
-                    if (!eventJson.content.startsWith(ECHO_PREFIX)) {
-                        console.log('prueba')
+                    /*if (!eventJson.content.startsWith(ECHO_PREFIX)) {
                         console.log('no empiezo con el prefijo echo')
                         const eventRef = eventJson.tags.find((el: any) => !!el.p)
                         console.log('soy la referencia al event', eventJson.tags, eventRef)
                         if (eventRef && 'e' in eventRef && !(sendDmsMap.get(eventRef.e)))
                             client.sendDirectMsg(PublicKey.fromHex(eventJson.pubkey), ECHO_PREFIX + eventJson.content, event.id);
-                    }
+                    }*/
 
                     return eventJson
-                })
+                }).concat(echoDms.map((event) => {
+                    const eventJson = JSON.parse(event.asJson())
+                    eventJson.content = nip04_decrypt(keys.secretKey, event.author, event.content);
+return eventJson
+                }))
+
+
             } catch (e: any) {
                 console.log(e)
             }
+
+            console.log('private messages', privateMessages)
 
             return {result: true, privateMessages}
         } catch (e: any) {

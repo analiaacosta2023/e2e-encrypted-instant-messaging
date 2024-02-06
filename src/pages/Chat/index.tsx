@@ -261,7 +261,7 @@ if(events) {
             id: eventJson.id,
             mine: eventJson.pubkey === keys.publicKey.toHex() || eventJson.content.startsWith(ECHO_PREFIX),
             data: {
-                message: eventJson.content,
+                message: eventJson.content.startsWith(ECHO_PREFIX) ? eventJson.content.split(ECHO_PREFIX)[1]: eventJson.content,
                 createdAt: eventJson.created_at
             }
         }
@@ -283,7 +283,8 @@ if(events) {
 
                 const aliasPublicKey = PublicKey.fromHex(pubkey)
 
-                await client.sendDirectMsg(aliasPublicKey, htmlContent);
+                const eventId = await client.sendDirectMsg(aliasPublicKey, htmlContent);
+                await client.sendDirectMsg(keys.publicKey, ECHO_PREFIX + htmlContent, eventId);
 
             } else {
                 // Esto solo devuelve un eventId
